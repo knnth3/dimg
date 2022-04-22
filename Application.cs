@@ -151,7 +151,7 @@ namespace dimg
 
             if (options.Export)
             {
-                string tarPath = $"{Environment.CurrentDirectory}/{imageName} (v{version}).tar";
+                string tarPath = $"\"{Environment.CurrentDirectory}\\{imageName} (v{version}).tar\"";
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Error.WriteLine($"Exporting image to '{tarPath}'");
                 Console.ResetColor();
