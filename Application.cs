@@ -25,8 +25,11 @@ namespace dimg
             [Option("cleanup", Required = false, HelpText = "Removes the image after building/uploading.")]
             public bool Cleanup { get; set; } = false;
 
-            [Option("export", Required = false, HelpText = "Export the image as a tar file")]
+            [Option("export", Required = false, HelpText = "Export the image as a tar file.")]
             public bool Export { get; set; } = false;
+
+            [Option("compress", Required = false, HelpText = "Compress the exported tar file.")]
+            public bool Compress { get; set; } = false;
 
             [Option('e', "embed", Required = false, HelpText = "Embed a file in the 1st WORKDIR specified in the dockerfile.")]
             public string Embed { get; set; }
@@ -151,17 +154,44 @@ namespace dimg
 
             if (options.Export)
             {
-                string tarPath = $"\"{Environment.CurrentDirectory}\\{imageName} (v{version}).tar\"";
+                string tarPath = $"{Environment.CurrentDirectory}\\{imageName} (v{version}).tar";
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.Error.WriteLine($"Exporting image to '{tarPath}'");
+                Console.Error.WriteLine($"Exporting image to '{tarPath}'...");
                 Console.ResetColor();
 
-                success = ConsoleHandle.RunCommand($"docker save --output {tarPath} {imageName}:{version}");
+                success = ConsoleHandle.RunCommand($"docker save --output \"{tarPath}\" {imageName}:{version}");
                 if (!success)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.Error.WriteLine("Failed to export image!");
                     Console.ResetColor();
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Error.WriteLine($"Image has been saved.");
+                    Console.ResetColor();
+                    if (options.Compress)
+                    {
+                        string gzPath = $"{tarPath}.gz";
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Error.WriteLine($"Compressing image to '{gzPath}'...");
+                        Console.ResetColor();
+                        success = ConsoleHandle.RunCommand($"gzip --force --keep --stdout --best \"{tarPath}\" > \"{gzPath}\"");
+                        if (!success)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Error.WriteLine("Failed to compress image. Make sure to have gzip installed.");
+                            Console.ResetColor();
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.Error.WriteLine($"Image has been compressed. DIMG will now safely remove the uncompressed version.");
+                            Console.ResetColor();
+                            File.Delete(tarPath);
+                        }
+                    }
                 }
             }
 
