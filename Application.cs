@@ -25,6 +25,9 @@ namespace dimg
             [Option("cleanup", Required = false, HelpText = "Removes the image after building/uploading.")]
             public bool Cleanup { get; set; } = false;
 
+            [Option("export", Required = false, HelpText = "Export the image as a tar file")]
+            public bool Export { get; set; } = false;
+
             [Option('e', "embed", Required = false, HelpText = "Embed a file in the 1st WORKDIR specified in the dockerfile.")]
             public string Embed { get; set; }
 
@@ -144,6 +147,22 @@ namespace dimg
                 Console.Error.WriteLine("Failed to build docker image!");
                 Console.ResetColor();
                 return false;
+            }
+
+            if (options.Export)
+            {
+                string tarPath = $"{Environment.CurrentDirectory}/{imageName} (v{version}).tar";
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Error.WriteLine($"Exporting image to '{tarPath}'");
+                Console.ResetColor();
+
+                success = ConsoleHandle.RunCommand($"docker save --output {tarPath} {imageName}:{version}");
+                if (!success)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine("Failed to export image!");
+                    Console.ResetColor();
+                }
             }
 
             TryUploadToRegistry(options, imageName, version);

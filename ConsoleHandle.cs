@@ -21,11 +21,6 @@ namespace dimg
             return success;
         }
 
-        static internal bool RunCLICommand(string command, string args)
-        {
-            return RunExternalExe(command, args);
-        }
-
         private static bool RunExternalExe(string filename, string arguments = null)
         {
             var process = new Process();
