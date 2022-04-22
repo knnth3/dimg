@@ -22,6 +22,9 @@ namespace dimg
             [Option("upload", Required = false, HelpText = "Auto-upload image to the given registry if specified.")]
             public bool AutoUpload { get; set; }
 
+            [Option("noupgrade", Required = false, HelpText = "Prevents the generated file from asking for a newer version.")]
+            public bool NoUpgrade { get; set; }
+
             [Option("cleanup", Required = false, HelpText = "Removes the image after building/uploading.")]
             public bool Cleanup { get; set; } = false;
 
@@ -123,7 +126,7 @@ namespace dimg
                 state = new ModifiedState();
             }
 
-            string version = VersionControl.GetNextVersion(imageName, options.Version);
+            string version = VersionControl.GetNextVersion(imageName, options.Version, options.NoUpgrade);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Building image '{imageName}:{version}'...");
             Console.ResetColor();
