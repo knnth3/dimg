@@ -11,23 +11,29 @@ namespace dimg
 
         static readonly string m_ConfigPath = "dimg-versions.yaml";
 
-        static internal string GetNextVersion(string imgName, string previousVersion, bool noUpgrade)
+        static internal string GetNextVersion(string imgName, string requestedVersion, bool noUpgrade)
         {
-            string nextVersion;
+            string result = requestedVersion;
+            bool noRequestedVersion = string.IsNullOrEmpty(requestedVersion);
             var config = GetConfigFile();
             if (config.Versions.TryGetValue(imgName, out string version))
             {
-                nextVersion = string.IsNullOrEmpty(previousVersion) ? UpgradeVersion(version, noUpgrade) : previousVersion;
-                config.Versions[imgName] = nextVersion;
+                if (noRequestedVersion)
+                {
+                    result = version;
+                }
             }
             else
             {
-                nextVersion = UpgradeVersion();
-                config.Versions.Add(imgName, nextVersion);
+                if (noRequestedVersion)
+                {
+                    result = UpgradeVersion();
+                }
             }
 
+            config.Versions[imgName] = UpgradeVersion(result, noUpgrade);
             SaveConfig(config);
-            return nextVersion;
+            return result;
         }
 
         private static string UpgradeVersion(string previousVersion = null, bool noUpgrade = false)
