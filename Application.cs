@@ -126,7 +126,7 @@ namespace dimg
                 state = new ModifiedState();
             }
 
-            string version = VersionControl.GetNextVersion(imageName, options.Version, options.NoUpgrade);
+            string version = string.IsNullOrEmpty(options.Version) ? VersionControl.GetBuildVersion(imageName, options.NoUpgrade) : options.Version;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Building image '{imageName}:{version}'...");
             Console.ResetColor();
@@ -198,35 +198,13 @@ namespace dimg
                 }
             }
 
-            TryUploadToRegistry(options, imageName, version);
-
-            if (options.Cleanup)
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Deleting created image...");
-                Console.ResetColor();
-                success = ConsoleHandle.RunCommand($"docker rmi {imageName}:{version}");
-                if (!success)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine("Failed remove the built image!");
-                    Console.ResetColor();
-                }
-            }
-
-            return true;
-        }
-
-        private static void TryUploadToRegistry(Options options, string imageName, string version)
-        {
-            bool success;
             if (options.AutoUpload)
             {
                 if (string.IsNullOrEmpty(options.Registry))
                 {
                     Console.ResetColor();
                     Console.WriteLine("Auto-upload was set to true, but no registry was specified. Skipping upload...");
-                    return;
+                    return false;
                 }
 
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -244,7 +222,7 @@ namespace dimg
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.Error.WriteLine("Failed to authenticate via 'doctl registry login'.");
                         Console.ResetColor();
-                        return;
+                        return false;
                     }
 
                     success = ConsoleHandle.RunCommand($"docker push {imageName}:{version}");
@@ -253,7 +231,7 @@ namespace dimg
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.Error.WriteLine("Failed to upload docker image to digitalocean!");
                         Console.ResetColor();
-                        return;
+                        return false;
                     }
                 }
                 else
@@ -268,7 +246,7 @@ namespace dimg
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.Error.WriteLine("Failed to authenticate via 'docker login'.");
                         Console.ResetColor();
-                        return;
+                        return false;
                     }
 
                     success = ConsoleHandle.RunCommand($"docker push {imageName}:{version}");
@@ -277,12 +255,29 @@ namespace dimg
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.Error.WriteLine("Failed to upload docker image to dockerhub!");
                         Console.ResetColor();
-                        return;
+                        return false;
                     }
                 }
 
                 Console.ResetColor();
             }
+
+            if (options.Cleanup)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Deleting created image...");
+                Console.ResetColor();
+                success = ConsoleHandle.RunCommand($"docker rmi {imageName}:{version}");
+                if (!success)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine("Failed remove the built image!");
+                    Console.ResetColor();
+                }
+            }
+
+            VersionControl.UpdateAndSave(imageName, version);
+            return true;
         }
     }
 }
