@@ -224,12 +224,28 @@ namespace dimg
                         Console.ResetColor();
                         return false;
                     }
+                }
+                else if (options.Registry.StartsWith("gcr.io") || options.Registry.Contains("-docker.pkg.dev"))
+                {
+                    var slashIndex = options.Registry.IndexOf('/');
+                    if (slashIndex == -1)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine($"Failed to detect google cloud docker registry: {options.Registry}");
+                        Console.ResetColor();
+                        return false;
+                    }
 
-                    success = ConsoleHandle.RunCommand($"docker push {imageName}:{version}");
+                    var dockerRegistry = options.Registry[..slashIndex];
+                    Console.ForegroundColor = ConsoleColor.Blue;
+                    Console.Error.WriteLine("Detected upload to google cloud registry!");
+                    Console.ResetColor();
+
+                    success = ConsoleHandle.RunCommand($"gcloud auth configure-docker {dockerRegistry}");
                     if (!success)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine("Failed to upload docker image to digitalocean!");
+                        Console.Error.WriteLine($"Failed to authenticate via 'gcloud auth configure-docker {dockerRegistry}'.");
                         Console.ResetColor();
                         return false;
                     }
@@ -248,15 +264,15 @@ namespace dimg
                         Console.ResetColor();
                         return false;
                     }
+                }
 
-                    success = ConsoleHandle.RunCommand($"docker push {imageName}:{version}");
-                    if (!success)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine("Failed to upload docker image to dockerhub!");
-                        Console.ResetColor();
-                        return false;
-                    }
+                success = ConsoleHandle.RunCommand($"docker push {imageName}:{version}");
+                if (!success)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine($"Failed to upload docker image to {options.Registry}!");
+                    Console.ResetColor();
+                    return false;
                 }
 
                 Console.ResetColor();
